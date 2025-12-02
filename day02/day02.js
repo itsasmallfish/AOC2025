@@ -1,26 +1,28 @@
 import { readFileSync } from 'fs';
 
 function find_innvalid_in_range(range) {
-    let min = range.split("-")[0]
-    let max = range.split("-")[1]
-    let length_canidates = []
-    let multiply_canidates = []
-    for (let i = 1; i <= max.length/2; i++) {
-        length_canidates.push(i)
+    const [minStr, maxStr] = range.split("-");
+    const min = parseInt(minStr, 10);
+    const max = parseInt(maxStr, 10);
+    let length_candidates = []
+    let multiply_candidates = []
+    for (let i = 1; i <= maxStr.length/2; i++) {
+        length_candidates.push(i)
     }
-    for (let i = 2; i <= max.length; i++) {
-        multiply_canidates.push(i)
+    for (let i = 2; i <= maxStr.length; i++) {
+        multiply_candidates.push(i)
     }
     let candidates = []
-    for (const l of length_canidates) {
-        for (const m of multiply_canidates) {
-            if (m*l <= max.length && m*l >= min.length) {
+    for (const l of length_candidates) {
+        for (const m of multiply_candidates) {
+            if (m*l <= maxStr.length && m*l >= minStr.length) {
                 candidates.push(...create_candidates(l,m))
-                console.log(candidates)
             }
         }
     }
-    return candidates.filter(candidate => candidate >= min && candidate <= max) // filter canidates that are in range 
+    // Use a Set to handle duplicates and then filter
+    const uniqueCandidates = [...new Set(candidates)];
+    return uniqueCandidates.filter(candidate => candidate >= min && candidate <= max) // filter candidates that are in range 
 }
 
 /*
@@ -34,21 +36,16 @@ function create_candidates(length, m) {
         start *= 10
         end *= 10
     }
-    console.log(length, m)
-    console.log(start, end)
     for (let i = start; i < end; i++) {
-        let candidate = i.toString()
-        for (let j = 1; j < m; j++) {
-            candidate = candidate.concat(candidate)
-        }
-        candidates.push(parseInt(candidate))
+        const base = i.toString();
+        candidates.push(parseInt(base.repeat(m), 10));
     }
     return candidates
 }
 
 let sum = 0
 try {
-    const data = readFileSync("examples.txt", "utf8")
+    const data = readFileSync("input02.txt", "utf8")
     const ranges = data.split(",")
     for (const range of ranges) {
         sum += find_innvalid_in_range(range).reduce((a,b) => a+b, 0)
