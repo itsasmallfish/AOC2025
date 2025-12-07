@@ -1,7 +1,7 @@
 import { readFileSync } from "fs"
 
 try {
-    const data = readFileSync("day07/examples.txt", "utf8")
+    const data = readFileSync("input07.txt", "utf8")
     const lines = data.split('\n')
     let map = []
     for (const line of lines) {
@@ -65,29 +65,43 @@ function analyze_splits(result) {
 }
 
 function analyze_paths(result) {
-    const startPosition = result[0].findIndex(e => e === "S")
-    return analyze_below(result.slice(1), startPosition )
-}
-
-function analyze_below(result, position) {
-    if (result.length <= 1) {
-        return 1
+    const startPosition = result[0].findIndex(e => e === 'S');
+    if (startPosition === -1) {
+        return 0;
     }
 
-    // Check the character in the next row at the current position to decide where to go.
-    const char_below = result[1][position];
+    const rows = result.length;
+    const cols = result[0].length;
 
-    if (char_below === '^') {
-        // Path splits. Follow the left and right branches.
-        let sum = 0;
-        sum += analyze_below(result.slice(1), position - 1);
-        sum += analyze_below(result.slice(1), position + 1);
-        return sum;
-    } else if (char_below === '|') {
-        // Path goes straight down.
-        return analyze_below(result.slice(1), position);
+    let currentRowCounts = Array(cols).fill(0);
+    // Paths start conceptually on row 0 at the S position.
+    currentRowCounts[startPosition] = 1;
+
+    // Iterate from row 0 to the second-to-last row
+    for (let r = 0; r < rows - 1; r++) {
+        const nextRowCounts = Array(cols).fill(0);
+        for (let c = 0; c < cols; c++) {
+            if (currentRowCounts[c] > 0) {
+                const count = currentRowCounts[c];
+                const char_below = result[r + 1][c];
+
+                if (char_below === '^') {
+                    // Path splits, propagate to the left and right branches in the next row.
+                    if (c > 0 && result[r + 1][c - 1] === '|') {
+                        nextRowCounts[c - 1] += count;
+                    }
+                    if (c < cols - 1 && result[r + 1][c + 1] === '|') {
+                        nextRowCounts[c + 1] += count;
+                    }
+                } else if (char_below === '|') {
+                    // Path goes straight down.
+                    nextRowCounts[c] += count;
+                }
+            }
+        }
+        currentRowCounts = nextRowCounts;
     }
 
-    // Path terminates.
-    return 0;
+    // The total is the sum of all paths that reached the final row.
+    return currentRowCounts.reduce((sum, count) => sum + count, 0);
 }
