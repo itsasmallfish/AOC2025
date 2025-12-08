@@ -16,7 +16,32 @@ function calculateDistance(p1, p2) {
     );
 }
 
-function findClusters(points) {
+class DSU {
+    constructor(n) {
+        this.parent = Array.from({ length: n }, (_, i) => i);
+        this.numSets = n;
+    }
+
+    find(i) {
+        if (this.parent[i] === i) {
+            return i;
+        }
+        return this.parent[i] = this.find(this.parent[i]);
+    }
+
+    union(i, j) {
+        const rootI = this.find(i);
+        const rootJ = this.find(j);
+        if (rootI !== rootJ) {
+            this.parent[rootJ] = rootI;
+            this.numSets--;
+            return true;
+        }
+        return false;
+    }
+}
+
+function findLastConnection(points) {
     const distances = [];
     for (let i = 0; i < points.length; i++) {
         for (let j = i + 1; j < points.length; j++) {
@@ -27,43 +52,18 @@ function findClusters(points) {
 
     distances.sort((a, b) => a.dist - b.dist);
 
-    const nearestEdges = distances.slice(0, 1000);
+    const dsu = new DSU(points.length);
+    let lastEdge = null;
 
-    const adj = new Map();
-    points.forEach(p => adj.set(p.id, []));
-
-    for (const edge of nearestEdges) {
-        adj.get(edge.p1.id).push(edge.p2.id);
-        adj.get(edge.p2.id).push(edge.p1.id);
-    }
-
-    const clusters = [];
-    const visited = new Set();
-
-    for (const point of points) {
-        if (!visited.has(point.id)) {
-            const cluster = [];
-            const queue = [point.id];
-            visited.add(point.id);
-
-            while (queue.length > 0) {
-                const currentId = queue.shift();
-                const currentPoint = points.find(p => p.id === currentId);
-                cluster.push(currentPoint);
-
-                const neighbors = adj.get(currentId) || [];
-                for (const neighborId of neighbors) {
-                    if (!visited.has(neighborId)) {
-                        visited.add(neighborId);
-                        queue.push(neighborId);
-                    }
-                }
+    for (const edge of distances) {
+        if (dsu.union(edge.p1.id, edge.p2.id)) {
+            if (dsu.numSets === 1) {
+                lastEdge = edge;
+                break;
             }
-            clusters.push(cluster);
         }
     }
-
-    return clusters;
+    return lastEdge;
 }
 
 function main() {
@@ -75,16 +75,14 @@ function main() {
         }
 
         const points = parsePoints(data);
-        const clusters = findClusters(points);
+        const lastConnection = findLastConnection(points);
 
-        clusters.sort((a, b) => b.length - a.length);
-
-        const top3Clusters = clusters.slice(0, 3);
-
-        console.log("Top 3 clusters by member count:");
-        top3Clusters.forEach((cluster, i) => {
-            console.log(`Cluster ${i + 1}: ${cluster.length} members`);
-        });
+        if (lastConnection) {
+            const result = lastConnection.p1.x * lastConnection.p2.x;
+            console.log(`The product of the X coordinates of the last two points you need to connect is: ${result}`);
+        } else {
+            console.log("Could not determine the last two points to connect.");
+        }
     });
 }
 
