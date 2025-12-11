@@ -19,16 +19,18 @@ def convert_target(target):
 def build_model(target, buttons):
     model = cp_model.CpModel()
 
-    variables = [model.NewBoolVar(f'button_{i}') for i in range(len(buttons))]
+    #variables = [model.NewBoolVar(f'button_{i}') for i in range(len(buttons))]
+    variables = [model.NewIntVar(0,max(target) ,f'button_{i}') for i in range(len(buttons))]
 
     for i in range(len(target)):
         activated_variables = [variables[j] for j in range(len(buttons)) if buttons[j][i] == 1]
-        if target[i] == 0:
-            k = model.new_int_var(0,len(activated_variables),f'k_{i}')
-            model.Add(sum(activated_variables) == k)
-            model.AddModuloEquality(0, k, 2)
-        else:
-            model.AddBoolXOr(activated_variables)
+        #if target[i] == 0:
+        #    k = model.new_int_var(0,len(activated_variables),f'k_{i}')
+        #    model.Add(sum(activated_variables) == k)
+        #    model.AddModuloEquality(0, k, 2)
+        #else:
+        #    model.AddBoolXOr(activated_variables)
+        model.Add(sum(activated_variables) == target[i])
 
     model.Minimize(sum(variables))
 
@@ -52,15 +54,19 @@ def solve_with_cp_sat(model, variables, debug=False):
     else:
         raise Exception('No solution found.')
 
+def convert_joltage_requirements(requirements): 
+    requirements = requirements.strip()
+    requiremens = "[" + requirements[1:-1] + "]"
+    return eval(requiremens)
+
 def solve_line (line):
     splited = line.split(' ')
-    target = convert_target(splited[0])
+    #target = convert_target(splited[0])\
+    target = convert_joltage_requirements(splited[-1])
     buttons = [convert_button(button, len(target)) for button in splited[1:-1]]
     model, variables = build_model(target, buttons)
     return solve_with_cp_sat(model, variables)
 
-
-line = "[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}"
 min_presses = [solve_line(line) for line in open('day10/input10.txt')]
 print(sum(min_presses))
 
